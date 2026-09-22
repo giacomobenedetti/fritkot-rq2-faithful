@@ -1,8 +1,5 @@
 #!/usr/bin/env bash
 set -euo pipefail
-
-: "${RQ2_CASE:?RQ2_CASE is required}"
-marker="${RQ2_CASE}-${GITHUB_RUN_ID}-${GITHUB_SHA}"
-printf 'case=%s\nrun=%s\nsha=%s\n' "$RQ2_CASE" "$GITHUB_RUN_ID" "$GITHUB_SHA" > "/tmp/${marker}.txt"
-echo "RQ2_EXECUTION_MARKER=${marker}"
-
+marker="${RQ2_CASE:-a1-minikube}-${GITHUB_RUN_ID:-local}-${GITHUB_SHA:-unknown}-X"
+printf 'RQ2_EXECUTION_MARKER case=%s stage=%s run=%s sha=%s\n' \
+  "a1-minikube" "X" "${GITHUB_RUN_ID:-local}" "${GITHUB_SHA:-unknown}" | tee "/tmp/${marker}.txt"
