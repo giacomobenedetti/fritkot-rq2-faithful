@@ -1,2 +1,2 @@
 case=a3-gemini
-stage=X
+stage=Y
