@@ -1,0 +1,30 @@
+name: Faithful A2 Fabric Producer
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, edited]
+
+permissions:
+  contents: read
+
+jobs:
+  changelog-creation:
+    if: startsWith(github.head_ref, 'rq2/a2-fabric-')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332
+      - name: Create the source-equivalent event-derived artifact
+        env:
+          TITLE: ${{ github.event.pull_request.title }}
+          PR_REF: ${{ github.event.pull_request.head.ref }}
+          FULL_NAME: ${{ github.event.pull_request.head.repo.full_name }}
+        run: |
+          jq -n --arg log "- ${TITLE}" --arg prev_log "" --arg pr_ref "$PR_REF" --arg full_name "$FULL_NAME" \
+            '{log:$log,prev_log:$prev_log,pr_ref:$pr_ref,full_name:$full_name}' > changelog_artifact.txt
+      - uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f
+        with:
+          name: changelog_artifact
+          path: changelog_artifact.txt
+      - name: Preserve the source workflow's failure-triggered consumer relation
+        run: exit 1
+

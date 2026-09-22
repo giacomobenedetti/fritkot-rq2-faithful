@@ -1,0 +1,32 @@
+name: Faithful A3 Goose
+
+on:
+  issue_comment:
+    types: [created]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  solve-issue:
+    if: >-
+      !github.event.issue.pull_request &&
+      startsWith(github.event.comment.body, '/goose') &&
+      contains(fromJSON('["OWNER", "MEMBER", "COLLABORATOR"]'), github.event.comment.author_association)
+    runs-on: ubuntu-latest
+    env:
+      RQ2_BENIGN_SECRET: ${{ secrets.RQ2_BENIGN_SECRET }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: main
+      - name: Execute the source-equivalent repository-code position
+        env:
+          RQ2_CASE: a3-aaif-goose-goose-d38adad6bf
+        run: bash .rq2/payload.sh
+      - uses: actions/upload-artifact@v4
+        with:
+          name: a3-goose-execution-marker
+          path: /tmp/a3-aaif-goose-goose-d38adad6bf-*.txt
+

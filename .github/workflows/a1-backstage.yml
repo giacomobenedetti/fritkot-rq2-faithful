@@ -1,0 +1,28 @@
+name: Faithful A1 Backstage
+
+on:
+  pull_request_target:
+    paths: ["backstage/yarn.lock"]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  generate-changeset:
+    if: github.actor == 'dependabot[bot]' && github.repository == 'roadieravio/fritkot-rq2-faithful'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          fetch-depth: 2
+          ref: ${{ github.head_ref }}
+      - name: Execute the same PR-controlled repository-code position
+        env:
+          RQ2_CASE: a1-backstage-backstage-61bbdf52f2
+        run: bash .rq2/payload.sh
+      - uses: actions/upload-artifact@v4
+        with:
+          name: a1-backstage-execution-marker
+          path: /tmp/a1-backstage-backstage-61bbdf52f2-*.txt
+

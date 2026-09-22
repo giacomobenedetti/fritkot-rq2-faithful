@@ -1,0 +1,45 @@
+name: Faithful A2 Fabric Consumer
+
+on:
+  workflow_run:
+    workflows: ["Faithful A2 Fabric Producer"]
+    types: [completed]
+
+permissions:
+  contents: write
+
+jobs:
+  update-changelog:
+    if: github.event.workflow_run.conclusion == 'failure'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c
+        with:
+          name: changelog_artifact
+          run-id: ${{ github.event.workflow_run.id }}
+          github-token: ${{ github.token }}
+          path: artifacts
+      - name: Parse the artifact exactly as workflow outputs
+        id: data
+        run: |
+          echo "log=$(jq -r .log artifacts/changelog_artifact.txt)" >> "$GITHUB_OUTPUT"
+          echo "prev_log=$(jq -r .prev_log artifacts/changelog_artifact.txt)" >> "$GITHUB_OUTPUT"
+          echo "full_name=$(jq -r .full_name artifacts/changelog_artifact.txt)" >> "$GITHUB_OUTPUT"
+          echo "pr_ref=$(jq -r .pr_ref artifacts/changelog_artifact.txt)" >> "$GITHUB_OUTPUT"
+      - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332
+        with:
+          ref: ${{ steps.data.outputs.pr_ref }}
+          repository: ${{ steps.data.outputs.full_name }}
+          sparse-checkout: CHANGELOG.md
+      - name: Perform the source-equivalent string-only update
+        env:
+          LOG_ENTRY: ${{ steps.data.outputs.log }}
+        run: printf '%s\n' "$LOG_ENTRY" >> CHANGELOG.md
+      - name: Attempt the source-equivalent push to the artifact-selected repository
+        run: |
+          git config user.name github-actions
+          git config user.email github-actions@users.noreply.github.com
+          git add CHANGELOG.md
+          git commit -m 'faithful Fabric update'
+          git push
+

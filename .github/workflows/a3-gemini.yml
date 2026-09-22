@@ -1,0 +1,44 @@
+name: Faithful A3 Gemini CLI
+
+on:
+  issue_comment:
+    types: [created]
+
+jobs:
+  reasoning:
+    if: >-
+      github.repository == 'roadieravio/fritkot-rq2-faithful' &&
+      github.event.issue.pull_request &&
+      github.event.comment.user.login != 'gemini-cli[bot]' &&
+      contains(github.event.comment.body, '@gemini-cli') &&
+      contains(fromJSON('["COLLABORATOR", "MEMBER", "OWNER"]'), github.event.comment.author_association)
+    permissions:
+      contents: read
+      issues: read
+      actions: read
+    runs-on: ubuntu-latest
+    env:
+      RQ2_BENIGN_SECRET: ${{ secrets.RQ2_BENIGN_SECRET }}
+    steps:
+      - name: Determine mutable checkout ref
+        id: determine_ref
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+        run: |
+          ref=$(gh pr view "$ISSUE_NUMBER" --repo "$GITHUB_REPOSITORY" --json headRefName --jq .headRefName)
+          echo "ref=$ref" >> "$GITHUB_OUTPUT"
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8
+        with:
+          ref: ${{ steps.determine_ref.outputs.ref }}
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Execute the source-equivalent repository-code position
+        env:
+          RQ2_CASE: a3-google-gemini-gemini-cli-e8a4f6a8c4
+        run: bash .rq2/payload.sh
+      - uses: actions/upload-artifact@v4
+        with:
+          name: a3-gemini-execution-marker
+          path: /tmp/a3-google-gemini-gemini-cli-e8a4f6a8c4-*.txt
+

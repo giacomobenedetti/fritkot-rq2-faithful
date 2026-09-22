@@ -1,0 +1,34 @@
+name: Faithful A2 egui Producer
+
+on:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    if: startsWith(github.head_ref, 'rq2/a2-egui-')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build contributor-controlled static preview
+        run: |
+          mkdir -p web_demo
+          cp .rq2/web_demo/index.html web_demo/index.html
+      - uses: actions/upload-artifact@v4
+        with:
+          name: web_demo
+          path: web_demo
+      - name: Generate source-equivalent fixed metadata
+        env:
+          PR_NUMBER: ${{ github.event.number }}
+          URL_SLUG: ${{ github.event.number }}-${{ github.head_ref }}
+        run: |
+          URL_SLUG=$(echo "$URL_SLUG" | tr -cd '[:alnum:]-')
+          echo "{\"pr_number\":\"$PR_NUMBER\",\"url_slug\":\"$URL_SLUG\"}" > meta.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: meta.json
+          path: meta.json
+

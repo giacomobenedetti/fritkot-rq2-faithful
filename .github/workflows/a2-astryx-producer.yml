@@ -1,0 +1,31 @@
+name: Faithful A2 ASTRYX Producer
+
+on:
+  pull_request:
+
+permissions: {}
+
+jobs:
+  analysis:
+    if: startsWith(github.head_ref, 'rq2/a2-astryx-')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: Produce identity-bound analysis metadata and untrusted payload
+        env:
+          PR_NUMBER: ${{ github.event.number }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          HEAD_REPO: ${{ github.event.pull_request.head.repo.full_name }}
+          BASE_REPO: ${{ github.repository }}
+          RUN_ID: ${{ github.run_id }}
+          RUN_ATTEMPT: ${{ github.run_attempt }}
+        run: |
+          mkdir -p pr-analysis
+          jq -n --arg pr "$PR_NUMBER" --arg head "$HEAD_SHA" --arg hr "$HEAD_REPO" --arg br "$BASE_REPO" --arg run "$RUN_ID" --arg attempt "$RUN_ATTEMPT" \
+            '{prNumber:$pr,headSha:$head,headRepository:$hr,baseRepository:$br,sourceRunId:$run,sourceRunAttempt:$attempt}' > pr-analysis/pr-meta.json
+          cp .rq2/payload.sh pr-analysis/payload.sh
+      - uses: actions/upload-artifact@v7
+        with:
+          name: pr-analysis
+          path: pr-analysis
+

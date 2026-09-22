@@ -1,0 +1,46 @@
+name: Faithful A3 Hugging Face
+
+on:
+  issue_comment:
+    types: [created]
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  run-repo-consistency-checks:
+    if: >-
+      github.event.issue.pull_request &&
+      github.event.issue.state == 'open' &&
+      contains(fromJSON('["MEMBER", "OWNER", "COLLABORATOR"]'), github.event.comment.author_association) &&
+      startsWith(github.event.comment.body, '@bot /repo')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Resolve and timestamp-check the current PR head
+        id: pr
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.issue.number }}
+          COMMENT_DATE: ${{ github.event.comment.created_at }}
+        run: |
+          head_sha=$(gh api "repos/${GITHUB_REPOSITORY}/pulls/${PR_NUMBER}" --jq .head.sha)
+          commit_date=$(gh api "repos/${GITHUB_REPOSITORY}/commits/${head_sha}" --jq .commit.committer.date)
+          if [ "$(date -d "$COMMENT_DATE" +%s)" -le "$(date -d "$commit_date" +%s)" ]; then
+            echo "Current PR head is newer than the authorizing comment; aborting."
+            exit 1
+          fi
+          echo "head_sha=$head_sha" >> "$GITHUB_OUTPUT"
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+        with:
+          ref: ${{ steps.pr.outputs.head_sha }}
+          persist-credentials: false
+      - name: Execute the source-equivalent repository-code position
+        env:
+          RQ2_CASE: a3-huggingface-transformers-4d29e1dfae
+        run: bash .rq2/payload.sh
+      - uses: actions/upload-artifact@v4
+        with:
+          name: a3-huggingface-execution-marker
+          path: /tmp/a3-huggingface-transformers-4d29e1dfae-*.txt
+

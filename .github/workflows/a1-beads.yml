@@ -1,0 +1,31 @@
+name: Faithful A1 Beads
+
+on:
+  pull_request_target:
+    branches: [main]
+    paths: ["beads/go.mod", "beads/go.sum"]
+
+permissions:
+  contents: write
+
+jobs:
+  update-vendor-hash:
+    if: >-
+      github.actor == 'dependabot[bot]' &&
+      github.event.pull_request.user.login == 'dependabot[bot]' &&
+      github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Execute the same PR-controlled repository-code position
+        env:
+          RQ2_CASE: a1-gastownhall-beads-3a51c5ebdc
+        run: bash .rq2/payload.sh
+      - uses: actions/upload-artifact@v4
+        with:
+          name: a1-beads-execution-marker
+          path: /tmp/a1-gastownhall-beads-3a51c5ebdc-*.txt
+
